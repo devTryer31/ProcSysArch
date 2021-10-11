@@ -6,4 +6,7 @@
 *.runs
 *.str
 *.gen
+*.sim
 *.ip_user_files
+
+!*simulate.log
