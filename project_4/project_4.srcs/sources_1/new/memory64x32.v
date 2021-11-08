@@ -3,15 +3,17 @@
 module Memory64x32(
     input clk,
     input [5:0] adr,
-    input [31:0] wd,
-    input we,
-    output reg [31:0] rd
+//    input [31:0] wd,
+//    input we,
+    output [31:0] rd
     );
     reg [31:0] RAM [0:255];
+
+    assign rd = RAM[adr];
+// —ейчас нам не нужна запись в п€м€ть извне.
+//    always @ (posedge clk)
+//        if (we) RAM[adr] <= wd;
     
-    always @ (posedge clk)
-    begin
-        if (we) RAM[adr] <= wd;
-        assign rd = RAM[adr];
-    end
+initial $readmemb("memF.mem", RAM);
+
 endmodule

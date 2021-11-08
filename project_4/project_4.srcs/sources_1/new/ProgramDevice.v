@@ -22,41 +22,14 @@ assign LedOut = RegsFileRD1_to_ALU;
 
 reg [7:0] Instr_to_sum;
 
+reg [7:0] PC = 7'b0000000;
 
-reg [7:0] PC;
-
-always @ (posedge clk)
-    PC <= PC + Instr_to_sum;
-    
-always @ (*) begin
-    case(WS)
-        2'b01: 
-             Input_to_regsFile = IN; 
-        2'b10: 
-             Input_to_regsFile = SE; 
-        2'b11: 
-             Input_to_regsFile = ALU_to_Input;
-        default: 
-                Input_to_regsFile = 0;
-    endcase
-end
-
-always @ (*) begin
-    case(((C & Flag) & B))
-        2'b0:
-            Instr_to_sum = 1; 
-        2'b1:
-            Instr_to_sum = Instr[12:5]; 
-        default: 
-            Instr_to_sum = 0;
-    endcase
-end
     
 Memory64x32 mem(
 .clk(clk),
 .adr(PC[7:0]),
-.wd(0),
-.we(0),
+//.wd(0),
+//.we(1'b0),
 .rd(Instr)
 );
 
@@ -78,5 +51,36 @@ ALU_RISC_V alu(
 .Result(ALU_to_Input),
 .Flag(Flag)
 );
+
+always @ (posedge clk)
+    PC <= $signed(PC) + $signed(Instr_to_sum);
+
+always @ (*) begin
+    case(WS)
+        2'b01: 
+             Input_to_regsFile <= IN; 
+        2'b10: 
+             Input_to_regsFile <= SE; 
+        2'b11: 
+             Input_to_regsFile <= ALU_to_Input;
+        default: 
+             Input_to_regsFile <= 0;
+    endcase
+end
+
+always @ (*) begin
+    case(((C && Flag) || B))
+        2'b0:
+            Instr_to_sum <= 1; 
+        2'b1:
+        begin
+            Instr_to_sum <= Instr[12:5]; 
+            $display($time, "!my logs: \t Instr_to_sum = %d", $signed(Instr[12:5]));
+        end
+        default: 
+            Instr_to_sum <= 0;
+    endcase
+end
+
 
 endmodule

@@ -17,5 +17,9 @@ module RegsFile(
     assign RD2 = (A2 == 0)? 0:Reg[A2];
     
     always @ (posedge clk)
-        if (WE3) Reg[A3] <= WD3;
+        if (WE3)
+            begin 
+                Reg[A3] <= WD3;
+                $display($time, "!my logs: \t reg[%d]<-%d", A3, WD3);
+            end
 endmodule
