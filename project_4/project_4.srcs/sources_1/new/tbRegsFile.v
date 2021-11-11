@@ -31,8 +31,8 @@ begin
 //    TotalIN = 13;
 //    #950;
 //        $display($time, "!my logs: \t %b->%b", TotalIN, TotalLedOut);
-    TotalIN = 61;
-    #950;
+    TotalIN = 13;
+    #900;
         $display($time, "!my logs: \t %b->%b", TotalIN, TotalLedOut);
 //    #180;
 end
