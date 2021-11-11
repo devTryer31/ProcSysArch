@@ -25,24 +25,27 @@
 //`define Pp $display("a = %d, b = %d, func = %d, res = %d, flag = %d | cor_flag = %d cor_ras = %d", a,b,func,res, correct_res, correct_flag);
 
 module Test_Bench();
-reg	func, a, b;
-wire res, flag;
+integer a, b;
+reg [4:0] func;
+wire [31:0] res;
+wire flag;
 
-reg correct_res, correct_flag;
+integer correct_res; reg correct_flag;
 
 ALU_RISC_V alu_risc_v (func, a, b, res, flag);
 
 initial begin
 
-correct_res = 0; correct_flag = 0;
 
-for (a=0; a<1024; a=a+1) begin 
-    for (b=0; b<1024; b=b+1) begin 
-        for (func=5'b00000; func<5'b11111; func=func+1) begin
-//           res = 0; flag = 0;
-           #10
+
+for (a = $signed(-10); a < 10; a = a + 1) begin 
+    for (b = $signed(-10); b < 10; b = b + 1) begin 
+        for (func = 5'b00000; func < 5'b11111; func = func + 1) begin
+        correct_flag = 1'b0; 
+        correct_res = 0;
+          #10
             case (func)
-                `ADD:	correct_res = a + b;
+                `ADD:	correct_res = a + b; // res
                 `SUB:	correct_res = a - b;
                 `LDSh:	correct_res = a << b;
                 `SMALLER:	correct_res = a < b;
@@ -59,16 +62,22 @@ for (a=0; a<1024; a=a+1) begin
                 `GRorEQ:	correct_flag = a >= b;
                 `uISLESS:	correct_flag = $unsigned(a < b);
                 `uGRorEQ:	correct_flag = $unsigned(a > b);
+                
+                default:    ;
              endcase
+             
              if(flag != correct_flag)
                 $display("Bad flag value");
              else
                 $display("Good flag value");
+                
              if(res != correct_res)
                 $display("Bad res value");
              else
                 $display("Good res value");
-             $display("a = %d, b = %d, func = %d, res = %d, flag = %d | cor_flag = %d cor_ras = %d", a,b,func,res,flag, correct_res, correct_flag);
+                
+             if(flag != correct_flag || res != correct_res)
+                $display("a = %d, b = %d, func = %d, res = %d, flag = %d | cor_flag = %d cor_res = %d", a,b,func,res,flag, correct_flag, correct_res);
              
            #10;
         end

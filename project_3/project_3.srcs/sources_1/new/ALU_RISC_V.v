@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module ALU_RISC_V(
     input [4:0] ALUop,
     input [31:0] A,
@@ -31,23 +33,25 @@ always @ (*) begin
     Flag = 1'b0;
 
 	case (ALUop)
-		`ADD:	Result = A + B;
-		`SUB:	Result = A - B;
-		`LDSh:	Result = A << B;
-		`SMALLER:	Result = A < B;
-		`uSMALLER:	Result = $unsigned(A < B);
-		`XOR:	Result = A ^ B;
-		`RDSh:	Result = A >> B;
-		`RTSh:	Result = A >>> B;
-		`OR:	Result = A | B;
-		`AND:	Result = A & B;
+		`ADD:	Result <= A + B;
+		`SUB:	Result <= A - B;
+		`LDSh:	Result <= A << B;
+		`SMALLER:	Result <= A < B;
+		`uSMALLER:	Result <= $unsigned(A < B);
+		`XOR:	Result <= A ^ B;
+		`RDSh:	Result <= A >> B;
+		`RTSh:	Result <= $signed(A) >>> $signed(B);
+		`OR:	Result <= A | B;
+		`AND:	Result <= A & B;
 		
-		`DEqual:	Flag = A == B;
-		`NEqual:	Flag = A != B;
-		`ISLESS:	Flag = A < B;
-		`GRorEQ:	Flag = A >= B;
-		`uISLESS:	Flag = $unsigned(A < B);
-		`uGRorEQ:	Flag = $unsigned(A > B);
+		`DEqual:	Flag <= A == B;
+		`NEqual:	Flag <= A != B;
+		`ISLESS:	Flag <= A < B;
+		`GRorEQ:	Flag <= A >= B;
+		`uISLESS:	Flag <= $unsigned(A < B);
+		`uGRorEQ:	Flag <= $unsigned(A > B);
+		
+		default: Flag <= 0;
 	endcase
 end
 
