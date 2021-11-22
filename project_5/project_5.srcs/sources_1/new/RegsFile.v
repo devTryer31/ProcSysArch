@@ -7,6 +7,7 @@ module RegsFile(
     input [4:0] A3,
     input WE3,
     input [31:0] WD3,
+    input Reset,
     output [31:0] RD1,
     output [31:0] RD2
     );
@@ -16,10 +17,16 @@ module RegsFile(
     assign RD1 = (A1 == 0)? 0:Reg[A1];
     assign RD2 = (A2 == 0)? 0:Reg[A2];
     
+    integer i;
     always @ (posedge clk)
-        if (WE3)
-            begin 
-                Reg[A3] <= WD3;
-                $display($time, "!my logs: \t reg[%d]<-%d", A3, WD3);
-            end
+     if (WE3)
+        begin 
+            Reg[A3] <= WD3;
+            $display($time, "!my logs: \t reg[%d]<-%d", A3, WD3);
+        end
+        
+     else if(Reset)
+         for(i = 0; i < 32; i=i+1)
+             Reg[i] = 0;
+        
 endmodule
