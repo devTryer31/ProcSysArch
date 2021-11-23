@@ -9,6 +9,6 @@ module instructions_memory(
     
     assign rd = mem[pc_adr[9:2]]; 
     
-    initial $readmemb("memF.mem", mem);
+    initial $readmemh("memF.mem", mem);
 
 endmodule

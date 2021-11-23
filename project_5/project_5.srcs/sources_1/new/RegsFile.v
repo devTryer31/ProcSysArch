@@ -22,7 +22,7 @@ module RegsFile(
      if (WE3)
         begin 
             Reg[A3] <= WD3;
-            $display($time, "!my logs: \t reg[%d]<-%d", A3, WD3);
+            $display($time, "!my logs: \t reg[%d]<-%d", A3, $signed(WD3));
         end
         
      else if(Reset)

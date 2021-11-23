@@ -46,8 +46,8 @@ always @ (*) begin
 		
 		`DEqual:	Flag <= A == B;
 		`NEqual:	Flag <= A != B;
-		`ISLESS:	Flag <= A < B;
-		`GRorEQ:	Flag <= A >= B;
+		`ISLESS:	Flag <= $signed(A) < $signed(B);
+		`GRorEQ:	Flag <= $signed(A) >= $signed(B);
 		`uISLESS:	Flag <= $unsigned(A < B);
 		`uGRorEQ:	Flag <= $unsigned(A > B);
 		

@@ -1,7 +1,8 @@
 `timescale 1ns / 1ps
 
 module programmable_device(
-    input clk, reset
+    input clk, reset,
+    output flag
     );
     
 wire [31:0] instr; 	              //инструкция 
@@ -34,7 +35,6 @@ assign imm_b = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
 
 reg  [31:0]  jmp_const;
 
-
 miriscv_decode Main_Decoder(
 	.fetched_instr_i(instr),
 	.ex_op_a_sel_o(ex_op_a_sel_o), 
@@ -48,13 +48,13 @@ miriscv_decode Main_Decoder(
 	.illegal_instr_o(illegal_instr_o),
 	.branch_o(branch_o),
 	.jal_o(jal_o),
-	.jarl_o(jarl_o)
+	.jalr_o(jalr_o)
 );
 
 
 instructions_memory Instruction_Memory(
 	.pc_adr(pc_adr), 
-	.dm_rd(instr)
+	.rd(instr)
 );								
 
 
@@ -65,7 +65,7 @@ RegsFile regs_file(
 	.A2(instr[24:20]),
 	.A3(instr[11:7]), 
 	.WD3(wd_3), 
-	.WE(gpr_we_a_o), 
+	.WE3(gpr_we_a_o), 
 	.RD1(rd_1), 
 	.RD2(rd_2)
 );
@@ -127,7 +127,7 @@ always @(posedge clk) begin
 	if (reset) 
 		pc_adr <= 0;
 	else begin
-		if (jarl_o)
+		if (jalr_o)
 			pc_adr <= rd_1;
 		else
 			if (((comp & branch_o) | jal_o) == 0) 

@@ -1,0 +1,37 @@
+#bytecode can be received from https://www.kvakil.me/venus/
+li x1, 1 #result register
+
+li x2, 997 #entered number
+
+#if equal 1
+sub x3, x1, x2
+beqz x3, end
+
+li x3, 2 # i
+
+for: # for(int i = 2; i < num; ++i)
+
+sub x4, x3, x2 # i - num
+bgez x4, end # i >= num -> i - num >= 0
+   
+addi x5, x2, 0 # num_tmp
+    while:
+    bltz x5, end_while # num_tmp < 0
+           
+            sub x5, x5, x3
+           
+            beqz x5, bad_end
+           
+            j while
+    end_while:
+    addi x3, x3, 1
+    j for
+
+bad_end:
+li x1, 0
+
+end:
+    li x3 0
+    li x4 0
+    li x5 0
+    j end

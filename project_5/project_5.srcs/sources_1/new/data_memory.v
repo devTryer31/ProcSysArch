@@ -16,6 +16,6 @@ module data_memory(
         if (WE)
             begin 
                 mem[A[7:2]] <= WD;//7-2+1=64
-                $display($time, "!my logs: \t data_mem[%d]<-%d", A3, WD3);
+                $display($time, "!my logs: \t data_mem[%d]<-%d", A, WD);
             end
 endmodule
