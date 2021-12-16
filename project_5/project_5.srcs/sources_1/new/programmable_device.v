@@ -1,9 +1,21 @@
 `timescale 1ns / 1ps
 
 module programmable_device(
-    input clk, reset,
-    output flag
-    );
+input clk, reset,
+output flag,
+    
+
+input data_received_i,
+input [31:0] data_rdata_i,
+output data_req_o,
+output data_we_o,
+output [3:0] data_be_o,
+output [31:0] data_addr_o,
+output [31:0] data_wdata_o,
+    
+input	[31:0] instr_rdata_i,
+output [31:0] instr_addr_o
+);
     
 wire [31:0] instr; 	              //инструкци€ 
 wire [1:0] ex_op_a_sel_o; 		  //”правл€ющий сигнал мультиплексора дл€ выбора первого операнда јЋ”
@@ -27,6 +39,7 @@ reg  [31:0]	 alu_operand_a, alu_operand_b;
 wire [31:0]  result;
 wire comp;
 wire [31:0]  imm_i, imm_s, imm_j, imm_b;
+wire en_pc;
 
 assign imm_i = {{20{instr[31]}}, instr[31:20]};//for negative numbers.
 assign imm_s = {{21{instr[31]}}, instr[31:25], instr[11:7]};
@@ -34,6 +47,10 @@ assign imm_j = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
 assign imm_b = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
 
 reg  [31:0]  jmp_const;
+
+wire enable_pc;
+assign instr = instr_rdata_i;
+assign instr_addr_o = pc_adr;	
 
 miriscv_decode Main_Decoder(
 	.fetched_instr_i(instr),
@@ -52,11 +69,27 @@ miriscv_decode Main_Decoder(
 );
 
 
-instructions_memory Instruction_Memory(
-	.pc_adr(pc_adr), 
-	.rd(instr)
-);								
 
+miriscv_lsu lsu(
+	.clk_i(clk),
+	.arstn_i(reset),
+		
+	.data_received_i(data_received_i),																						
+	.data_rdata_i(data_rdata_i),		
+	.data_req_o(data_req_o),			
+	.data_we_o(data_we_o),		
+ 	.data_be_o(data_be_o), 			
+	.data_addr_o(data_addr_o),
+	.data_wdata_o(data_wdata_o),
+  
+	.lsu_addr_i(result),			
+	.lsu_we_i(mem_we_o),			
+	.lsu_size_i(mem_size_o), 	
+	.lsu_data_i(rd_2),			
+	.lsu_req_i(mem_req_o),			
+	.lsu_stall_req_o(en_pc),	
+	.lsu_data_o(dm_rd)
+);
 
 RegsFile regs_file(
 	.clk(clk), 
@@ -91,20 +124,12 @@ end
 ///
 
 
-ALU_RISC_V ALU(
+ALU_RISC_V alu(
 	.ALUop(alu_op_o), 
 	.A(alu_operand_a), 
 	.B(alu_operand_b), 
 	.Result(result), 
 	.Flag(comp)
-);
-
-data_memory Data_Memory(
-	.clk(clk),        
-	.A(result),    
-	.WD(rd_2),
-	.WE(mem_we_o),   					
-	.RD(dm_rd)
 );
 
 //right from Data Memory 
@@ -127,13 +152,18 @@ always @(posedge clk) begin
 	if (reset) 
 		pc_adr <= 0;
 	else begin
-		if (jalr_o)
-			pc_adr <= rd_1;
-		else
-			if (((comp & branch_o) | jal_o) == 0) 
-			    pc_adr <= pc_adr + 4;
-			else
-				pc_adr <= pc_adr + jmp_const;			
+	   if(!en_pc)
+        if (jalr_o)
+            pc_adr <= rd_1;
+        else
+            begin
+                if (((comp & branch_o) | jal_o) == 0) 
+                    pc_adr <= pc_adr + 4;
+                else
+                    pc_adr <= pc_adr + jmp_const;
+                    
+                //$display($time, "!my logs: \t pc=", pc_adr);
+            end
 	end
 end
 

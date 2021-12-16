@@ -18,7 +18,7 @@ module miriscv_decode(
     output reg jalr_o 						//Сигнал об инструкции безусловного перехода jarl
 );
 
-
+//defines clearing needed
 `define OPCODE_WIDTH 5
 `define LOAD 5'b00000
 `define MISC_MEM 5'b00011
@@ -30,7 +30,6 @@ module miriscv_decode(
 `define BRANCH 5'b11000
 `define JALR 5'b11001
 `define JAL 5'b11011
-`define SYSTEM 5'b11100
 
 wire [6:0] opcode;
 reg [2:0] func3;
@@ -41,7 +40,7 @@ always @ (*) begin
     //default initializing
     ex_op_a_sel_o = 2'b00;
     ex_op_b_sel_o = 3'b000;
-    mem_req_o = 0;
+    mem_req_o = 1'b0;
     mem_we_o = 0;
     gpr_we_a_o = 0;
     wb_src_sel_o = 0;
@@ -58,30 +57,30 @@ always @ (*) begin
 	else 
 	begin
 		case (opcode[6:2])
-			`LOAD:
+			`LOAD_OPCODE:
 				begin
-					ex_op_a_sel_o = 2'b00;//RD1
-					ex_op_b_sel_o = 3'b001;//imm
+					ex_op_a_sel_o = `OP_A_RS1;//RD1
+					ex_op_b_sel_o = `OP_B_IMM_I;//imm
 					alu_op_o = `ALU_ADD;
-					mem_req_o = 1;//from Mem
+					mem_req_o = 1'b1;//from Mem
 					gpr_we_a_o = 1;//to rd
-					wb_src_sel_o = 1;
-					illegal_instr_o = 0;
+					wb_src_sel_o = `WB_LSU_DATA;
 					
 					case (func3)
-						3'b000:
+						`LDST_B:
 							mem_size_o = 3'd0;
-						3'b001:
+						`LDST_H:
 							mem_size_o = 3'd1;
-						3'b010:
+						`LDST_W:
 							mem_size_o = 3'd2;
-						3'b100:
+						`LDST_BU:
 							mem_size_o = 3'd4;
-						3'b101:
+						`LDST_HU:
 							mem_size_o = 3'd5;
 						default:
 							illegal_instr_o = 1;
 					endcase
+				    //$stop();
 				end
 			`OP_IMM:
 				begin
@@ -135,25 +134,28 @@ always @ (*) begin
 					alu_op_o = `ALU_ADD;
 					illegal_instr_o = 0;
 				end
-			`STORE:
+			`STORE_OPCODE:
 				begin
-					ex_op_a_sel_o = 2'b00;
-					ex_op_b_sel_o = 3'b011;
-					mem_req_o = 1;
+					ex_op_a_sel_o = `OP_A_RS1;
+					ex_op_b_sel_o = `OP_B_IMM_S;
+					mem_req_o = 1'b1;
 					mem_we_o = 1;
 					alu_op_o = `ALU_ADD;
 					illegal_instr_o = 0;
+					wb_src_sel_o = `WB_EX_RESULT;
 					
 				case (func3)//half part
 					3'b000:
-						mem_size_o = 3'b000;
+						mem_size_o = `LDST_B;
 					3'b001:
-						mem_size_o = 3'b001;
+						mem_size_o = `LDST_H;
 					3'b010:
-						mem_size_o = 3'b010;
+						mem_size_o = `LDST_W;
 					default:
 						illegal_instr_o = 1;
 				endcase
+				
+				    //$stop();
 				
 				end
 			`OP:
@@ -268,16 +270,29 @@ always @ (*) begin
 					jal_o = 1;
 					alu_op_o = `ALU_ADD;
 				end
-			`SYSTEM:
-					illegal_instr_o = 0;
+			`SYSTEM_OPCODE:
+                begin
+                    ex_op_a_sel_o = `OP_A_RS1;
+                    ex_op_b_sel_o = `OP_B_RS2;
+                    wb_src_sel_o = `WB_EX_RESULT;
+                    mem_size_o = `LDST_B;
+                    alu_op_o = `ALU_ADD;
+                end
 			`MISC_MEM:
-					illegal_instr_o = 0;
+			     begin
+                    ex_op_a_sel_o = `OP_A_RS1;
+                    ex_op_b_sel_o = `OP_B_RS2;
+                    wb_src_sel_o = `WB_EX_RESULT;
+                    mem_size_o = `LDST_B;
+                    alu_op_o = `ALU_ADD;
+			     end
 			 default:
-				    illegal_instr_o = 1;
+                illegal_instr_o = 1;
 		endcase
 		
 	end
-	
+	if(illegal_instr_o == 1)
+        $display($time, "!my logs: \t illegal instr opcode=%b", opcode); 
 end
 
 endmodule

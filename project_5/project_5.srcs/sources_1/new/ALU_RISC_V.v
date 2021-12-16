@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module ALU_RISC_V(
-    input [4:0] ALUop,
+    input [5:0] ALUop,
     input [31:0] A,
     input [31:0] B,
     output reg [31:0] Result,
@@ -53,6 +53,8 @@ always @ (*) begin
 		
 		default: Flag <= 0;
 	endcase
+	if(ALUop[4:3] == 2'b11)
+	   Result <= Flag;
 end
 
 
