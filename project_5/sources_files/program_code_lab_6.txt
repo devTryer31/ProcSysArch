@@ -1,0 +1,7 @@
+li x1, 0x12345688 #for 'fff' check. Other way: 0x12345678
+sw x1, 100(x0)
+lb x2, 100(x0)
+sh x2, 104(x0)
+lw x3, 104(x0)
+end:
+  j end
