@@ -33,7 +33,7 @@ module miriscv_top
   assign data_mem_valid = (data_addr_core >= RAM_SIZE) ?  1'b0 : 1'b1;//addr validation
   assign data_rvalid_core = (data_mem_valid) ? data_rvalid_ram : 1'b0;//reading opportunity signal
   
-  assign data_rdata_core  = (data_mem_valid) ? data_rdata_ram : 1'b0;//data from mem
+  //assign data_rdata_core  = (data_mem_valid) ? data_rdata_ram : 1'b0;//data from mem
   assign data_req_ram     = (data_mem_valid) ? data_req_core : 1'b0;//data prom proc
   assign data_we_ram      =  data_we_core;
   assign data_be_ram      =  data_be_core;//byte to write
@@ -70,12 +70,60 @@ module miriscv_top
 
     .data_received_o(data_rvalid_ram),
     .data_rdata_o  ( data_rdata_ram  ),
-    .data_req_i    ( data_req_ram    ),
-    .data_we_i     ( data_we_ram     ),
+    .data_req_i    ( addr_decoder_to_ram_req    ),
+    .data_we_i     ( addr_decoder_to_ram_we     ),
     .data_be_i     ( data_be_ram     ),
     .data_addr_i   ( data_addr_ram   ),
     .data_wdata_i  ( data_wdata_ram  )
   );
 
+wire addr_decoder_to_ram_req,
+ addr_decoder_to_ram_we,
+ addr_decoder_we_d0,
+ addr_decoder_we_d1;
+
+io_decoder addr_decoder(
+    .req(data_req_ram),
+    .we(data_we_ram),
+    .addr(data_addr_ram),
+    
+    .req_m(addr_decoder_to_ram_req),
+    .we_m(addr_decoder_to_ram_we),
+    
+    .we_d0(addr_decoder_we_d0),
+    .we_d1(addr_decoder_we_d1),
+    
+    .RDsel(RDsel_fro_decoder)
+);
+
+wire[1:0] RDsel_fro_decoder;
+wire[31:0] data_from_keys;
+
+always @(*) begin //откуда получаем данные из системы память - переферийные устройства
+    case(RDsel_fro_decoder)
+        //2'b00 //default reading from ram
+        //2'b01: data_rdata_core = nothing received from displays 
+        2'b01 : data_rdata_core = data_from_keys;
+        default: data_rdata_core  = (data_mem_valid) ? data_rdata_ram : 1'b0;
+    endcase
+end
+
+segment_display displays(
+    .we(addr_decoder_we_d0),
+    .wdata(data_wdata_ram),
+    .addr(data_addr_ram),
+    
+    //.clk(/*need frequency divider */),
+    
+);
+
+
+ps2_keyboard keys_controller(
+    .we(addr_decoder_we_d1),
+    .wdata(data_wdata_ram[0]),
+    .addr(data_addr_ram),
+    .out(data_from_keys)
+    //need to be connected:  clk_50, ps2_clk, ps2_dat
+);
 
 endmodule

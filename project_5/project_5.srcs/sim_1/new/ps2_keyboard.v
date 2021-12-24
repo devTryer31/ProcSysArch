@@ -1,12 +1,29 @@
 `timescale 1ns / 1ps
 
-module ps2_keyboard(
-    input areset, clk_50, ps2_clk, ps2_dat,
-    output reg valid_data,
-    output [7:0] data
-    );
-    
-    
+module ps2_keyboard( 
+    input clk_50, ps2_clk, ps2_dat, //как их получить извне?
+    input we,
+    input reg wdata, //to 0x80003001 write
+    output[31:0] out, //0x80003001 read
+    //input areset,
+    input [31:0] addr
+    //output reg valid_data, 
+    //output [7:0] data //0x80003000 key code.
+);
+wire internal_addr = addr[0];
+
+reg[7:0] data;
+reg valid_data;
+wire areset = wdata && we;
+//assign out = !we && valid_data;
+
+always @(*) begin
+    if(internal_addr == 0) // if addr == 0x80003000
+        out = {24'b0, data};
+    else // if addr == 0x80003001
+        out = {31'b0, valid_data};
+end
+
 reg [9:0] ps2_clk_detect; 
 always@(posedge clk_50 or posedge areset) begin
     if (areset) 
