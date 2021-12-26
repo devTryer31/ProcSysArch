@@ -9,7 +9,7 @@ module segment_display(
 reg reset; //0x8000100A
 reg [7:0] segments_num[3:0]; //0x80001000 - 0x80001007
 reg [7:0] chouse_mod_seg_idx; //FF if mode not using (0x80001009)
-reg [3:0] anode_idx; //active display idx (0x80001008)  
+reg [3:0] anode_idx; //active display idx 
 
 function num_to_segments_decode;
     input [3:0] num;
@@ -33,9 +33,10 @@ function num_to_segments_decode;
     endcase    
 endfunction
 
-reg [6:0] curr_segment_print = num_to_segments_decode((segments_num[anode_idx] >> anode_idx*4) & 4'b1111);//need external connection
-reg [7:0] anodes;//need external connection
-reg chousen_num[3:0];
+wire [6:0] curr_segment_print = num_to_segments_decode((segments_num[anode_idx] >> anode_idx*4) & 4'b1111);//need external connection
+reg [7:0] anodes;//need external connection (0x80001008)  
+reg [3:0] chousen_num;
+integer i;
 
 //for sequential switching display parts
 always @(negedge clk) begin
@@ -43,16 +44,16 @@ always @(negedge clk) begin
         anode_idx <= anode_idx + 1'b1; //для последовательного переключения активных дисплеев
         if(chouse_mod_seg_idx == anode_idx) begin // система мерциний
             chousen_num <= segments_num[anode_idx];
-            segments_num[anode_idx] = 7'b0;
-            #500000000; // flashing 0.5s
+            segments_num[anode_idx] <= 7'b0;
+            #1;
+            //#500000000; // flashing 0.5s
             segments_num[anode_idx] <= chousen_num;
         end
     end
     else begin //сброс значений
-        integer i;
         for(i=0; i < 8; i=i+1)
             segments_num[i] <= 4'b0;
-        anodes = 8'b1;
+        anodes = 8'b0;
         chouse_mod_seg_idx <= 8'b1;
     end
 end
@@ -65,7 +66,7 @@ always @(posedge clk) begin
         case(local_addr)
             1'hA: reset <= wdata[0];
             1'h9: chouse_mod_seg_idx = wdata[7:0];
-            1'h8: anode_idx = wdata[3:0];
+            1'h8: anodes = wdata[7:0]; //(0x80001008)  
             default: begin // запись в регистры значений дисплеев
                 if(local_addr <= 7 && local_addr >= 0)
                     segments_num[local_addr] = wdata[3:0];

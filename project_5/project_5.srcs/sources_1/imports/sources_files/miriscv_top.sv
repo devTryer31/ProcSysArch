@@ -9,6 +9,14 @@ module miriscv_top
   input rst_n_i
 );
 
+wire addr_decoder_to_ram_req,
+ addr_decoder_to_ram_we,
+ addr_decoder_we_d0,
+ addr_decoder_we_d1;
+
+wire[1:0] RDsel_fro_decoder;
+wire[31:0] data_from_keys;
+
   logic  [31:0]  instr_rdata_core;
   logic  [31:0]  instr_addr_core;
   
@@ -30,9 +38,10 @@ module miriscv_top
   logic  [31:0]  data_wdata_ram;
 
   logic  data_mem_valid;
-  assign data_mem_valid = (data_addr_core >= RAM_SIZE) ?  1'b0 : 1'b1;//addr validation
-  assign data_rvalid_core = (data_mem_valid) ? data_rvalid_ram : 1'b0;//reading opportunity signal
-  
+  //now it always valid cause displays and keyboard.
+  assign data_mem_valid = 1'b1;//(data_addr_core >= RAM_SIZE) ?  1'b0 : 1'b1;//addr validation
+
+  //assign data_rvalid_core = (data_mem_valid) ? (data_rvalid_ram) : 1'b0;//reading opportunity signal
   //assign data_rdata_core  = (data_mem_valid) ? data_rdata_ram : 1'b0;//data from mem
   assign data_req_ram     = (data_mem_valid) ? data_req_core : 1'b0;//data prom proc
   assign data_we_ram      =  data_we_core;
@@ -77,11 +86,6 @@ module miriscv_top
     .data_wdata_i  ( data_wdata_ram  )
   );
 
-wire addr_decoder_to_ram_req,
- addr_decoder_to_ram_we,
- addr_decoder_we_d0,
- addr_decoder_we_d1;
-
 io_decoder addr_decoder(
     .req(data_req_ram),
     .we(data_we_ram),
@@ -96,34 +100,66 @@ io_decoder addr_decoder(
     .RDsel(RDsel_fro_decoder)
 );
 
-wire[1:0] RDsel_fro_decoder;
-wire[31:0] data_from_keys;
+
 
 always @(*) begin //откуда получаем данные из системы память - переферийные устройства
     case(RDsel_fro_decoder)
         //2'b00 //default reading from ram
-        //2'b01: data_rdata_core = nothing received from displays 
-        2'b01 : data_rdata_core = data_from_keys;
-        default: data_rdata_core  = (data_mem_valid) ? data_rdata_ram : 1'b0;
+        //2'b01: data_rvalid_core = 1'b1;//data_rdata_core = nothing received from displays 
+        2'b10: // if from keys
+            begin
+                data_rdata_core = data_from_keys;
+                #1;
+                data_rvalid_core = 1'b1;
+            end
+        default: //if from ram
+            begin
+                data_rvalid_core = (data_mem_valid) ? (data_rvalid_ram) : 1'b0;
+                data_rdata_core  = (data_mem_valid) ? data_rdata_ram : 1'b0;
+            end
     endcase
 end
+
+//assign data_rvalid_core = data_rvalid_ram ? 1'b1 : (RDsel_fro_decoder == 2'b10);
 
 segment_display displays(
     .we(addr_decoder_we_d0),
     .wdata(data_wdata_ram),
     .addr(data_addr_ram),
-    
-    //.clk(/*need frequency divider */),
-    
+    .clk(clk_i)    
 );
 
-
+reg sig_to_sp2_dat;
 ps2_keyboard keys_controller(
     .we(addr_decoder_we_d1),
     .wdata(data_wdata_ram[0]),
     .addr(data_addr_ram),
-    .out(data_from_keys)
-    //need to be connected:  clk_50, ps2_clk, ps2_dat
+    .out(data_from_keys),
+    .clk_50(clk_i),
+    .ps2_clk(clk_i),
+    .ps2_dat(sig_to_sp2_dat)
 );
+
+//emulation key typing
+reg[3:0] i = 3'b0;
+reg[7:0] num_from_key = 8'b10001101;
+always @(negedge  clk_i) begin
+    if(data_wdata_ram[0] == 0 && !addr_decoder_we_d1) begin//if not reset
+        if(i == 4'b1011)
+            i <= 3'b0;
+            
+        if(i == 0)
+            sig_to_sp2_dat = 0;
+        if(i == 9)
+            sig_to_sp2_dat = 0;//paritet
+        if(i == 10)
+            sig_to_sp2_dat = 1;
+            
+        else begin
+            sig_to_sp2_dat <= num_from_key[i];
+        end
+        i = i + 1'b1;
+    end
+end
 
 endmodule

@@ -1,10 +1,11 @@
 `timescale 1ns / 1ps
 
 module ps2_keyboard( 
-    input clk_50, ps2_clk, ps2_dat, //как их получить извне?
+    input clk_50,
+    input ps2_clk, ps2_dat, //hardware inputs.
     input we,
-    input reg wdata, //to 0x80003001 write
-    output[31:0] out, //0x80003001 read
+    input wdata, //to 0x80003001 write
+    output reg [31:0] out, //0x80003001 read
     //input areset,
     input [31:0] addr
     //output reg valid_data, 
@@ -12,7 +13,7 @@ module ps2_keyboard(
 );
 wire internal_addr = addr[0];
 
-reg[7:0] data;
+wire [7:0] data;
 reg valid_data;
 wire areset = wdata && we;
 //assign out = !we && valid_data;
@@ -34,7 +35,7 @@ end
 
 wire ps2_clk_negedge = &ps2_clk_detect[4:0] && &(~ps2_clk_detect[9:5]);
 
-
+reg [1:0] state;
 reg [3:0] count_bit; 
 always @ (posedge clk_50 or posedge areset) begin
     if (areset) 
@@ -47,14 +48,14 @@ always @ (posedge clk_50 or posedge areset) begin
     end
 end
 
-reg [1:0] state;
 localparam IDLE = 2'd0;
 localparam RECEIVE_DATA = 2'd1;
 localparam CHECK_PARITY_STOP_BITS = 2'd2;
 
 always @ (negedge ps2_clk or posedge areset)
     if (areset) 
-       state <= IDLE;  else begin 
+       state <= IDLE;
+    else begin 
      case (state) 
         IDLE: 
             if (ps2_dat == 1'b0) 
